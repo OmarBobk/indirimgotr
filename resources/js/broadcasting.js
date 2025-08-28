@@ -6,11 +6,11 @@ window.Pusher = Pusher;
 
 window.Echo = new Echo({
     broadcaster: 'reverb',
-    key: import.meta.env.VITE_REVERB_APP_KEY || '1xvd7kdthpfbqt0a0roj',
-    wsHost: import.meta.env.VITE_REVERB_HOST || 'localhost',
-    wsPort: import.meta.env.VITE_REVERB_PORT ?? 6001,
-    wssPort: import.meta.env.VITE_REVERB_PORT ?? 6001,
-    forceTLS: false, // Disable TLS for local development
+    key: import.meta.env.VITE_REVERB_APP_KEY,
+    wsHost: import.meta.env.VITE_REVERB_HOST ?? window.location.hostname,
+    wsPort: import.meta.env.VITE_REVERB_PORT ?? 80,
+    wssPort: import.meta.env.VITE_REVERB_PORT ?? 443,
+    forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? 'https') === 'https',
     enabledTransports: ['ws', 'wss'],
     disableStats: true,
 });
@@ -107,7 +107,7 @@ class BroadcastingManager {
     // Event Handlers
     handleShopCreated(data) {
         console.log('Shop Created:', data);
-        
+
         // Show notification
         this.showNotification({
             title: 'New Shop Created',
@@ -118,19 +118,19 @@ class BroadcastingManager {
 
         // Update UI if on shops page
         this.updateShopsList(data.shop);
-        
+
         // Dispatch custom event for Livewire components (both backend and frontend)
         window.dispatchEvent(new CustomEvent('shop-created', { detail: data }));
-        
+
         // Update notification count for frontend
         this.updateFrontendNotificationCount();
     }
 
     handleShopAssigned(data) {
         console.log('Shop Assigned:', data);
-        
+
         const assignmentType = data.assignment_type === 'reassignment' ? 'reassigned' : 'assigned';
-        
+
         // Show notification
         this.showNotification({
             title: 'Shop Assignment',
@@ -141,17 +141,17 @@ class BroadcastingManager {
 
         // Update UI if on shops page
         this.updateShopAssignment(data);
-        
+
         // Dispatch custom event for Livewire components (both backend and frontend)
         window.dispatchEvent(new CustomEvent('shop-assigned', { detail: data }));
-        
+
         // Update notification count for frontend
         this.updateFrontendNotificationCount();
     }
 
     handleOrderCreated(data) {
         console.log('Order Created:', data);
-        
+
         // Show notification
         this.showNotification({
             title: 'New Order',
@@ -162,17 +162,17 @@ class BroadcastingManager {
 
         // Update UI if on orders page
         this.updateOrdersList(data.order);
-        
+
         // Dispatch custom event for Livewire components (both backend and frontend)
         window.dispatchEvent(new CustomEvent('order-created', { detail: data }));
-        
+
         // Update notification count for frontend
         this.updateFrontendNotificationCount();
     }
 
     handleOrderUpdated(data) {
         console.log('Order Updated:', data);
-        
+
         // Show notification
         this.showNotification({
             title: 'Order Updated',
@@ -183,17 +183,17 @@ class BroadcastingManager {
 
         // Update UI if on orders page
         this.updateOrderStatus(data);
-        
+
         // Dispatch custom event for Livewire components (both backend and frontend)
         window.dispatchEvent(new CustomEvent('order-updated', { detail: data }));
-        
+
         // Update notification count for frontend
         this.updateFrontendNotificationCount();
     }
 
     handleNotification(notification) {
         console.log('Notification received:', notification);
-        
+
         // Show notification
         this.showNotification({
             title: 'New Notification',
@@ -208,28 +208,28 @@ class BroadcastingManager {
 
         // Update notification count
         this.updateNotificationCount();
-        
+
         // Dispatch custom event for Livewire components (both backend and frontend)
         window.dispatchEvent(new CustomEvent('notification-received', { detail: notification }));
-        
+
         // Update notification count for frontend
         this.updateFrontendNotificationCount();
-        
+
         // Also dispatch the specific Echo event for Livewire components that need it
         const userId = this.userId;
         if (userId) {
-            window.dispatchEvent(new CustomEvent(`echo-private:App.Models.User.${userId},.Illuminate\\Notifications\\Events\\BroadcastNotificationCreated`, { 
-                detail: notification 
+            window.dispatchEvent(new CustomEvent(`echo-private:App.Models.User.${userId},.Illuminate\\Notifications\\Events\\BroadcastNotificationCreated`, {
+                detail: notification
             }));
         }
     }
 
     handleUserUpdated(data) {
         console.log('User Updated:', data);
-        
+
         // Update user profile if needed
         this.updateUserProfile(data);
-        
+
         // Dispatch custom event for Livewire components
         window.dispatchEvent(new CustomEvent('user-updated', { detail: data }));
     }
@@ -323,7 +323,7 @@ class BroadcastingManager {
             const currentCount = parseInt(frontendNotificationBadge.textContent) || 0;
             frontendNotificationBadge.textContent = currentCount + 1;
         }
-        
+
         // Also trigger Livewire refresh for frontend components
         const frontendNotificationBell = document.querySelector('[wire\\:id*="notification-bell"]');
         if (frontendNotificationBell && window.Livewire) {
@@ -386,7 +386,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Set user information from meta tags or data attributes
     window.userId = document.querySelector('meta[name="user-id"]')?.content;
     window.userRole = document.querySelector('meta[name="user-role"]')?.content;
-    
+
     // Initialize broadcasting manager
     window.broadcastingManager = new BroadcastingManager();
 });
