@@ -25,7 +25,7 @@ class NotificationBell extends Component
 
     public function mount(): void
     {
-        // Listen for real-time notifications if you have broadcasting enabled
+        // Initialize component - no parameters needed
     }
 
     public function getUnreadNotificationsProperty()
@@ -126,7 +126,7 @@ class NotificationBell extends Component
     /**
      * Handle broadcast notification from Echo
      */
-    public function handleBroadcastNotification($event): void
+    public function handleBroadcastNotification($event = null): void
     {
         // Refresh notifications to show the new one
         $this->refreshNotifications();
@@ -142,7 +142,7 @@ class NotificationBell extends Component
     /**
      * Handle shop created event
      */
-    public function handleShopCreated($data): void
+    public function handleShopCreated($data = null): void
     {
         // Refresh notifications
         $this->refreshNotifications();
@@ -150,7 +150,7 @@ class NotificationBell extends Component
         // Show toast notification
         $this->dispatch('notify', [
             'type' => 'success',
-            'message' => "Shop \"{$data['shop']['name']}\" has been created",
+            'message' => $data ? "Shop \"{$data['shop']['name']}\" has been created" : "New shop created",
             'sec' => 3000
         ]);
     }
@@ -158,25 +158,33 @@ class NotificationBell extends Component
     /**
      * Handle shop assigned event
      */
-    public function handleShopAssigned($data): void
+    public function handleShopAssigned($data = null): void
     {
         // Refresh notifications
         $this->refreshNotifications();
         
-        $assignmentType = $data['assignment_type'] === 'reassignment' ? 'reassigned' : 'assigned';
-        
-        // Show toast notification
-        $this->dispatch('notify', [
-            'type' => 'info',
-            'message' => "Shop \"{$data['shop']['name']}\" has been {$assignmentType} to {$data['salesperson']['name']}",
-            'sec' => 3000
-        ]);
+        if ($data) {
+            $assignmentType = $data['assignment_type'] === 'reassignment' ? 'reassigned' : 'assigned';
+            
+            // Show toast notification
+            $this->dispatch('notify', [
+                'type' => 'info',
+                'message' => "Shop \"{$data['shop']['name']}\" has been {$assignmentType} to {$data['salesperson']['name']}",
+                'sec' => 3000
+            ]);
+        } else {
+            $this->dispatch('notify', [
+                'type' => 'info',
+                'message' => 'Shop assignment updated',
+                'sec' => 3000
+            ]);
+        }
     }
 
     /**
      * Handle order created event
      */
-    public function handleOrderCreated($data): void
+    public function handleOrderCreated($data = null): void
     {
         // Refresh notifications
         $this->refreshNotifications();
@@ -184,7 +192,7 @@ class NotificationBell extends Component
         // Show toast notification
         $this->dispatch('notify', [
             'type' => 'success',
-            'message' => "Order #{$data['order']['id']} created with status: {$data['order']['status_label']}",
+            'message' => $data ? "Order #{$data['order']['id']} created with status: {$data['order']['status_label']}" : "New order created",
             'sec' => 3000
         ]);
     }
@@ -192,7 +200,7 @@ class NotificationBell extends Component
     /**
      * Handle order updated event
      */
-    public function handleOrderUpdated($data): void
+    public function handleOrderUpdated($data = null): void
     {
         // Refresh notifications
         $this->refreshNotifications();
@@ -200,7 +208,7 @@ class NotificationBell extends Component
         // Show toast notification
         $this->dispatch('notify', [
             'type' => 'info',
-            'message' => "Order #{$data['order']['id']} has been updated",
+            'message' => $data ? "Order #{$data['order']['id']} has been updated" : "Order updated",
             'sec' => 3000
         ]);
     }

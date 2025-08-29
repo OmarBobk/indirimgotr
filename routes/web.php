@@ -95,9 +95,43 @@ Route::get('/demo/progress-tracker', function () {
     return view('demo.progress-tracker');
 })->name('demo.progress-tracker');
 
+// Broadcasting authentication route
 Route::post('/broadcasting/auth', function (Request $request) {
-    return Broadcast::auth($request);
+    try {
+        \Log::info('Broadcasting auth request', [
+            'user_id' => auth()->id(),
+            'channel' => $request->input('channel_name'),
+            'socket_id' => $request->input('socket_id'),
+        ]);
+        
+        return Broadcast::auth($request);
+    } catch (\Exception $e) {
+        \Log::error('Broadcasting auth error: ' . $e->getMessage(), [
+            'user_id' => auth()->id(),
+            'channel' => $request->input('channel_name'),
+            'socket_id' => $request->input('socket_id'),
+            'trace' => $e->getTraceAsString(),
+        ]);
+        
+        return response()->json(['error' => 'Authentication failed: ' . $e->getMessage()], 403);
+    }
 })->middleware(['web', 'auth']);
+
+// Test route for broadcasting authentication
+Route::get('/test-broadcasting-auth', function () {
+    if (!auth()->check()) {
+        return response()->json(['error' => 'Not authenticated'], 401);
+    }
+    
+    $user = auth()->user();
+    return response()->json([
+        'user_id' => $user->id,
+        'user_name' => $user->name,
+        'roles' => $user->roles->pluck('name'),
+        'owned_shop' => $user->ownedShop ? $user->ownedShop->id : null,
+        'assigned_shops' => $user->assignedShops->pluck('id'),
+    ]);
+})->middleware(['auth']);
 
 // Broadcasting demo route
 Route::get('/broadcasting-demo', function () {

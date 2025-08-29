@@ -6,11 +6,11 @@ window.Pusher = Pusher;
 
 window.Echo = new Echo({
     broadcaster: 'reverb',
-    key: import.meta.env.VITE_REVERB_APP_KEY,
-    wsHost: import.meta.env.VITE_REVERB_HOST ?? window.location.hostname,
-    wsPort: import.meta.env.VITE_REVERB_PORT ?? 80,
-    wssPort: import.meta.env.VITE_REVERB_PORT ?? 443,
-    forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? 'https') === 'https',
+    key: import.meta.env.VITE_REVERB_APP_KEY || '1xvd7kdthpfbqt0a0roj',
+    wsHost: import.meta.env.VITE_REVERB_HOST || 'localhost',
+    wsPort: import.meta.env.VITE_REVERB_PORT ?? 6001,
+    wssPort: import.meta.env.VITE_REVERB_PORT ?? 6001,
+    forceTLS: false, // Disable TLS for local development
     enabledTransports: ['ws', 'wss'],
     disableStats: true,
 });
@@ -32,65 +32,95 @@ class BroadcastingManager {
 
     // Shop Events
     listenToShopEvents() {
-        // Public shop channel
-        window.Echo.channel('shops')
-            .listen('.shop.created', (e) => {
-                this.handleShopCreated(e);
-            })
-            .listen('.shop.assigned', (e) => {
-                this.handleShopAssigned(e);
-            });
-
-        // Admin dashboard channel
-        if (this.userRole === 'admin') {
-            window.Echo.private('admin.dashboard')
+        try {
+            // Public shop channel
+            window.Echo.channel('shops')
                 .listen('.shop.created', (e) => {
                     this.handleShopCreated(e);
                 })
                 .listen('.shop.assigned', (e) => {
                     this.handleShopAssigned(e);
+                })
+                .error((error) => {
+                    console.error('Shops channel error:', error);
                 });
-        }
 
-        // Salesperson-specific channel
-        if (this.userId) {
-            window.Echo.private(`salesperson.${this.userId}`)
-                .listen('.shop.assigned', (e) => {
-                    this.handleShopAssigned(e);
-                });
+            // Admin dashboard channel
+            if (this.userRole === 'admin') {
+                window.Echo.private('admin.dashboard')
+                    .listen('.shop.created', (e) => {
+                        this.handleShopCreated(e);
+                    })
+                    .listen('.shop.assigned', (e) => {
+                        this.handleShopAssigned(e);
+                    })
+                    .error((error) => {
+                        console.error('Admin dashboard channel error:', error);
+                    });
+            }
+
+            // Salesperson-specific channel
+            if (this.userId) {
+                window.Echo.private(`salesperson.${this.userId}`)
+                    .listen('.shop.assigned', (e) => {
+                        this.handleShopAssigned(e);
+                    })
+                    .error((error) => {
+                        console.error('Salesperson channel error:', error);
+                    });
+            }
+        } catch (error) {
+            console.error('Error setting up shop events:', error);
         }
     }
 
     // Order Events
     listenToOrderEvents() {
-        // Public orders channel
-        window.Echo.channel('orders')
-            .listen('.order.created', (e) => {
-                this.handleOrderCreated(e);
-            })
-            .listen('.order.updated', (e) => {
-                this.handleOrderUpdated(e);
-            });
-
-        // Admin dashboard channel
-        if (this.userRole === 'admin') {
-            window.Echo.private('admin.dashboard')
+        try {
+            // Public orders channel
+            window.Echo.channel('orders')
                 .listen('.order.created', (e) => {
                     this.handleOrderCreated(e);
                 })
                 .listen('.order.updated', (e) => {
                     this.handleOrderUpdated(e);
+                })
+                .error((error) => {
+                    console.error('Orders channel error:', error);
                 });
+
+            // Admin dashboard channel
+            if (this.userRole === 'admin') {
+                window.Echo.private('admin.dashboard')
+                    .listen('.order.created', (e) => {
+                        this.handleOrderCreated(e);
+                    })
+                    .listen('.order.updated', (e) => {
+                        this.handleOrderUpdated(e);
+                    })
+                    .error((error) => {
+                        console.error('Admin dashboard channel error:', error);
+                    });
+            }
+        } catch (error) {
+            console.error('Error setting up order events:', error);
         }
     }
 
     // Notifications
     listenToNotifications() {
         if (this.userId) {
-            window.Echo.private(`App.Models.User.${this.userId}`)
-                .notification((notification) => {
-                    this.handleNotification(notification);
-                });
+            try {
+                window.Echo.private(`App.Models.User.${this.userId}`)
+                    .notification((notification) => {
+                        this.handleNotification(notification);
+                    })
+                    .error((error) => {
+                        console.error('Notification channel error:', error);
+                    });
+            } catch (error) {
+                console.error('Error setting up notification channel:', error);
+            }
         }
     }
 
@@ -386,6 +416,24 @@ document.addEventListener('DOMContentLoaded', () => {
     // Set user information from meta tags or data attributes
     window.userId = document.querySelector('meta[name="user-id"]')?.content;
     window.userRole = document.querySelector('meta[name="user-role"]')?.content;
+
+    // Add error handling for Echo connection
+    if (window.Echo) {
+        window.Echo.connector.pusher.connection.bind('error', (error) => {
+            console.error('Echo connection error:', error);
+            if (error.code === 4009) {
+                console.error('Origin not allowed. Make sure Reverb is running with correct hostname.');
+            }
+        });
+
+        window.Echo.connector.pusher.connection.bind('connected', () => {
+            console.log('Successfully connected to Reverb broadcasting server');
+        });
+
+        window.Echo.connector.pusher.connection.bind('disconnected', () => {
+            console.log('Disconnected from Reverb broadcasting server');
+        });
+    }
 
     // Initialize broadcasting manager
     window.broadcastingManager = new BroadcastingManager();

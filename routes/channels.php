@@ -15,25 +15,45 @@ use Illuminate\Support\Facades\Broadcast;
 
 // User-specific private channels
 Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
-    return (int) $user->id === (int) $id;
+    try {
+        return (int) $user->id === (int) $id;
+    } catch (\Exception $e) {
+        \Log::error('Channel auth error for App.Models.User.{id}: ' . $e->getMessage());
+        return false;
+    }
 });
 
 // Admin dashboard channel
 Broadcast::channel('admin.dashboard', function ($user) {
-    return $user->hasRole('admin');
+    try {
+        return $user->hasRole('admin');
+    } catch (\Exception $e) {
+        \Log::error('Channel auth error for admin.dashboard: ' . $e->getMessage());
+        return false;
+    }
 });
 
 // Salesperson-specific channels
 Broadcast::channel('salesperson.{id}', function ($user, $id) {
-    return (int) $user->id === (int) $id || $user->hasRole('admin');
+    try {
+        return (int) $user->id === (int) $id || $user->hasRole('admin');
+    } catch (\Exception $e) {
+        \Log::error('Channel auth error for salesperson.{id}: ' . $e->getMessage());
+        return false;
+    }
 });
 
 // Shop-specific channels
 Broadcast::channel('shop.{id}', function ($user, $id) {
-    // Allow access if user is admin, shop owner, or assigned salesperson
-    return $user->hasRole('admin') || 
-           $user->shops()->where('id', $id)->exists() || 
-           $user->assignedShops()->where('id', $id)->exists();
+    try {
+        // Allow access if user is admin, shop owner, or assigned salesperson
+        return $user->hasRole('admin') || 
+               ($user->ownedShop && $user->ownedShop->id == $id) || 
+               $user->assignedShops()->where('id', $id)->exists();
+    } catch (\Exception $e) {
+        \Log::error('Channel auth error for shop.{id}: ' . $e->getMessage());
+        return false;
+    }
 });
 
 // Public channels (no authorization required)
