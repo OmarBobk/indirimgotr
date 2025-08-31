@@ -26,7 +26,7 @@ class BroadcastingManager {
     initializeListeners() {
         this.listenToShopEvents();
         this.listenToOrderEvents();
-        this.listenToNotifications();
+        // this.listenToNotifications();
         this.listenToUserEvents();
     }
 
@@ -108,21 +108,21 @@ class BroadcastingManager {
     }
 
     // Notifications
-    listenToNotifications() {
-        if (this.userId) {
-            try {
-                window.Echo.private(`App.Models.User.${this.userId}`)
-                    .notification((notification) => {
-                        this.handleNotification(notification);
-                    })
-                    .error((error) => {
-                        console.error('Notification channel error:', error);
-                    });
-            } catch (error) {
-                console.error('Error setting up notification channel:', error);
-            }
-        }
-    }
+    // listenToNotifications() {
+    //     if (this.userId) {
+    //         try {
+    //             window.Echo.private(`App.Models.User.${this.userId}`)
+    //                 .notification((notification) => {
+    //                     this.handleNotification(notification);
+    //                 })
+    //                 .error((error) => {
+    //                     console.error('Notification channel error:', error);
+    //                 });
+    //         } catch (error) {
+    //             console.error('Error setting up notification channel:', error);
+    //         }
+    //     }
+    // }
 
     // User Events
     listenToUserEvents() {
@@ -137,14 +137,6 @@ class BroadcastingManager {
     // Event Handlers
     handleShopCreated(data) {
         console.log('Shop Created:', data);
-
-        // Show notification
-        this.showNotification({
-            title: 'New Shop Created',
-            message: `Shop "${data.shop.name}" has been created`,
-            type: 'success',
-            icon: 'shop',
-        });
 
         // Update UI if on shops page
         this.updateShopsList(data.shop);
@@ -161,14 +153,6 @@ class BroadcastingManager {
 
         const assignmentType = data.assignment_type === 'reassignment' ? 'reassigned' : 'assigned';
 
-        // Show notification
-        this.showNotification({
-            title: 'Shop Assignment',
-            message: `Shop "${data.shop.name}" has been ${assignmentType} to ${data.salesperson.name}`,
-            type: 'info',
-            icon: 'user-check',
-        });
-
         // Update UI if on shops page
         this.updateShopAssignment(data);
 
@@ -181,14 +165,6 @@ class BroadcastingManager {
 
     handleOrderCreated(data) {
         console.log('Order Created:', data);
-
-        // Show notification
-        this.showNotification({
-            title: 'New Order',
-            message: `Order #${data.order.id} created with status: ${data.order.status_label}`,
-            type: 'success',
-            icon: 'shopping-cart',
-        });
 
         // Update UI if on orders page
         this.updateOrdersList(data.order);
@@ -203,14 +179,6 @@ class BroadcastingManager {
     handleOrderUpdated(data) {
         console.log('Order Updated:', data);
 
-        // Show notification
-        this.showNotification({
-            title: 'Order Updated',
-            message: `Order #${data.order.id} has been updated`,
-            type: 'info',
-            icon: 'edit',
-        });
-
         // Update UI if on orders page
         this.updateOrderStatus(data);
 
@@ -223,18 +191,6 @@ class BroadcastingManager {
 
     handleNotification(notification) {
         console.log('Notification received:', notification);
-
-        // Show notification
-        this.showNotification({
-            title: 'New Notification',
-            message: notification.description,
-            type: 'info',
-            icon: 'bell',
-            action: notification.action_url ? {
-                url: notification.action_url,
-                text: notification.action_text || 'View Details'
-            } : null,
-        });
 
         // Update notification count
         this.updateNotificationCount();
@@ -265,34 +221,6 @@ class BroadcastingManager {
     }
 
     // UI Update Methods
-    showNotification({ title, message, type = 'info', icon = 'info', action = null }) {
-        // Check if we have a notification system (like Toastr, SweetAlert, etc.)
-        if (window.toastr) {
-            window.toastr[type](message, title);
-        } else if (window.Swal) {
-            window.Swal.fire({
-                title,
-                text: message,
-                icon: type,
-                toast: true,
-                position: 'top-end',
-                showConfirmButton: false,
-                timer: 3000,
-                timerProgressBar: true,
-            });
-        } else {
-            // Fallback to browser notification
-            if ('Notification' in window && Notification.permission === 'granted') {
-                new Notification(title, { body: message, icon: '/favicon.ico' });
-            } else {
-                // Simple alert fallback
-                console.log(`${title}: ${message}`);
-            }
-        }
-
-        // Add to notification list if exists
-        this.addToNotificationList({ title, message, type, icon, action });
-    }
 
     updateShopsList(shop) {
         // Update shops list if on shops page
@@ -361,16 +289,6 @@ class BroadcastingManager {
             if (component) {
                 component.call('refreshNotifications');
             }
-        }
-    }
-
-    addToNotificationList(notification) {
-        // Add to notification dropdown/list
-        const notificationList = document.querySelector('[data-notifications-list]');
-        if (notificationList) {
-            // Add new notification to the list
-            const notificationItem = this.createNotificationItem(notification);
-            notificationList.insertBefore(notificationItem, notificationList.firstChild);
         }
     }
 

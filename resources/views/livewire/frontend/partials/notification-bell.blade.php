@@ -205,14 +205,14 @@
     <script>
         // Auto-refresh notifications every 30 seconds
         setInterval(() => {
-            if (!@this.get('isOpen')) {
-            @this.refreshNotifications();
+            if (!$wire.get('isOpen')) {
+                $wire.refreshNotifications();
             }
         }, 30000);
 
         // Update timestamps every minute
         setInterval(() => {
-        @this.$refresh();
+            $wire.$refresh();
         }, 60000);
 
         // Keyboard shortcuts
@@ -220,53 +220,21 @@
             // Mark all as read with Ctrl+Shift+M
             if (e.ctrlKey && e.shiftKey && e.key === 'M') {
                 e.preventDefault();
-                if (@this.get('unreadCount') > 0) {
-                @this.call('markAllAsRead');
+                if ($wire.get('unreadCount') > 0) {
+                    $wire.call('markAllAsRead');
                 }
             }
 
             // Close dropdown with Escape
-            if (e.key === 'Escape' && @this.get('isOpen')) {
-            @this.set('isOpen', false);
+            if (e.key === 'Escape' && $wire.get('isOpen')) {
+                $wire.set('isOpen', false);
             }
         });
 
         // Listen for notification updates from other components
         window.addEventListener('notification-updated', function(e) {
-        @this.refreshNotifications();
+            $wire.refreshNotifications();
         });
-
-        // Listen for real-time broadcasting events
-        document.addEventListener('shop-created', function(e) {
-            console.log('Frontend: Shop created event received', e.detail);
-            @this.call('handleShopCreated', e.detail);
-        });
-
-        document.addEventListener('shop-assigned', function(e) {
-            console.log('Frontend: Shop assigned event received', e.detail);
-            @this.call('handleShopAssigned', e.detail);
-        });
-
-        document.addEventListener('order-created', function(e) {
-            console.log('Frontend: Order created event received', e.detail);
-            @this.call('handleOrderCreated', e.detail);
-        });
-
-        document.addEventListener('order-updated', function(e) {
-            console.log('Frontend: Order updated event received', e.detail);
-            @this.call('handleOrderUpdated', e.detail);
-        });
-
-                 document.addEventListener('notification-received', function(e) {
-             console.log('Frontend: Notification received', e.detail);
-             @this.call('handleBroadcastNotification', e.detail);
-         });
-
-         // Also listen for the specific Echo notification event
-         document.addEventListener('echo-private:App.Models.User.{{ auth()->id() }},.Illuminate\\Notifications\\Events\\BroadcastNotificationCreated', function(e) {
-             console.log('Frontend: Echo notification received', e.detail);
-             @this.call('handleBroadcastNotification', e.detail);
-         });
 
         // Connection status monitoring
         if (window.Echo) {
